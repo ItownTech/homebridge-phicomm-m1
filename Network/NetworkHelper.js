@@ -5,6 +5,7 @@ var PlatformAccessory, Accessory, Service, Characteristic, UUIDGen;
 const pattern = "(\{.*?\})";
 const ServerPort = 9000;
 const sockets = [];
+const brightness_hex = "aa2f01e02411398f0b0000000000000000b0f89311420e003d0000027b226272696768746e657373223a22%s222c2274797065223a327dff23454e4423"
 
 NetworkHelper = function(platform) {
     this.init(platform);
@@ -15,6 +16,7 @@ NetworkHelper = function(platform) {
     Characteristic = platform.Characteristic;
     UUIDGen = platform.UUIDGen;
     
+    this.sockets = {};
     this.m1s = {};
     this.api = platform.api;
     var that = this;
@@ -24,15 +26,22 @@ NetworkHelper = function(platform) {
 
         server.on('connection',function(socket){  
             that.platform.log.info("[Network]New connection!");  
-            sockets.push(socket); 
+            that.sockets[socket.remoteAddress] = socket;
+            //that.platform.log.debug(that.sockets);  
             socket.on('data', function(data){  
                 that.platform.log.debug("[Network]got data:" + data + " From IP: " + socket.remoteAddress);  
                 that.parseData(data,socket.remoteAddress)
             });  
             socket.on('close', function(){  
-                that.platform.log.debug("[Network]Connection closed!");  
-                var index = sockets.indexOf(socket);  
-                sockets.splice(index, 1);  
+                that.platform.log.debug("[Network]Connection closed!");
+                for (var i in that.sockets) {
+                    socke = that.sockets[i];
+                    if(socke.remoteAddress == socket.remoteAddress){
+                        that.platform.log.debug("Deleting Unconnected " + socket.remoteAddress);
+                        delete that.sockets[i];
+                    }
+                }
+                //that.platform.log.debug(that.sockets);  
             });  
         });  
         server.on('error', function(err){
@@ -62,6 +71,21 @@ NetworkHelper.prototype.parseData = function(data,ip) {
     }
     if(dataa != null){
         this.manageDevice(dataa,ip);
+    }
+}
+
+NetworkHelper.prototype.sendData = function(ip,data) {
+    var that = this;
+    try{
+        that.platform.log.debug("[Network]Sending Data to: " + ip);  
+        if(ip in that.sockets){
+            that.sockets[ip].write(data);
+            that.platform.log.debug("[Network]Done!");  
+        }else{
+            that.platform.log.debug("[Network]Unfound Connection " + ip);  
+        }
+    }catch(ex){
+        that.platform.log.error("[Network]Error Sending Data:" + ex);
     }
 }
 
@@ -102,7 +126,6 @@ PhicommM1 = function(dThis,data,ip){
 }
 
 PhicommM1.prototype.parseData = function(data) {
-    //{"humidity":"58.71","temperature":"25.57","value":"45","hcho":"10"}
     this.temperature = data.temperature;
     this.humidity = data.humidity;
     this.pm25value = data.value;
@@ -142,7 +165,6 @@ PhicommM1.prototype.calcAirQuality = function(pm25) {
     }
 }
 
-
 PhicommM1.prototype.InitAccessory = function() {
     var that = this;
     uuid = UUIDGen.generate(this.strip + Date.now());
@@ -178,18 +200,82 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,this.pm25value);
             }.bind(this))
 
+        this.brightness = 100;
+        this.LightService = new Service.Lightbulb(this.name);
+        this.LightService.addCharacteristic(Characteristic.Brightness)
+        this.LightService.getCharacteristic(Characteristic.On)
+            .on('get', function(callback) {
+                var status = false;
+                if (this.brightness != 0){
+                    status = true;
+                }
+                callback(null,status);
+            }.bind(this))
+            .on('set', function(value,callback) {
+                var brightness = value ? this.brightness : 0;
+                var command = brightness_hex.replace("%s",brightness.toString(16));
+                var buf = new Buffer(command,'hex');
+                this.platform.MNetworkHelper.sendData(this.ip,buf);
+                this.platform.log.debug("Command: " + command);
+                callback(null);
+            }.bind(this))
+        this.LightService.getCharacteristic(Characteristic.Brightness)
+            .on('get', function(callback) {
+                callback(null,this.brightness);
+            }.bind(this))
+            .on('set', function(value,callback) {
+                var brightness = this.brightness = value ;
+                var command = brightness_hex.replace("%s",brightness.toString(16));
+                var buf = new Buffer(command,'hex');
+                this.platform.MNetworkHelper.sendData(this.ip,buf);
+                //this.platform.log.debug("Command: " + command);
+                callback(null);
+            }.bind(this))
+
+
         newAccessory.addService(this.TemperatureService, 'Temperature');
         newAccessory.addService(this.HumidityService, 'Humidity');
         newAccessory.addService(this.AirQualityService, 'AirQuality');
+        newAccessory.addService(this.LightService, 'Light')
         this.M1Service = newAccessory;
         this.platform.registerAccessory(newAccessory);
 
     }else{
-
+        this.brightness = 100;
         this.M1Service = newAccessory;
         this.TemperatureService = newAccessory.getService(Service.TemperatureSensor);
         this.HumidityService = newAccessory.getService(Service.HumiditySensor);
         this.AirQualityService = newAccessory.getService(Service.AirQualitySensor);
+        this.LightService = newAccessory.getService(Service.Lightbulb);
+        this.LightService.getCharacteristic(Characteristic.On)
+            .on('get', function(callback) {
+                var status = false;
+                if (this.brightness != 0){
+                    status = true;
+                }
+                callback(null,status);
+            }.bind(this))
+            .on('set', function(value,callback) {
+                var brightness = value ? this.brightness : 0;
+                var command = brightness_hex.replace("%s",brightness.toString(16));
+                var buf = new Buffer(command,'hex');
+                this.platform.MNetworkHelper.sendData(this.ip,buf);
+                this.platform.log.debug("Command: " + command);
+                callback(null);
+            }.bind(this))
+        this.LightService.getCharacteristic(Characteristic.Brightness)
+            .on('get', function(callback) {
+                callback(null,this.brightness);
+            }.bind(this))
+            .on('set', function(value,callback) {
+                var brightness = this.brightness = value ;
+                var command = brightness_hex.replace("%s",brightness.toString(16));
+                var buf = new Buffer(command,'hex');
+                this.platform.MNetworkHelper.sendData(this.ip,buf);
+                //this.platform.log.debug("Command: " + command);
+                callback(null);
+            }.bind(this))
+
         this.updateAllValue();
     }
 

@@ -67,7 +67,7 @@ function PhicommM1Platform(log, config, api) {
     this.log.info("[INFO]*    Telegram Group:https://t.me/joinchat/EujYfA-JKSwpRlXURD1t6g    *");
     this.log.info("[INFO]*********************************************************************");
     this.log.info("[INFO]start success...");
-    var MNetworkHelper = new NetworkHelper(this);
+    this.MNetworkHelper = new NetworkHelper(this);
 	
 	this.api.on('didFinishLaunching', function() {
         setTimeout(function() {

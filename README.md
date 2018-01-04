@@ -33,5 +33,7 @@ address=/.aircat.phicomm.com/192.168.1.5
 ```
 
 ## Version Logs 
+### 0.0.2
+1. fix unrefreshing AirQuality
 ### 0.0.1
 1. add support for Phicomm M1.

@@ -1,6 +1,6 @@
 {
   "name": "homebridge-phicomm-m1",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "homebridge plugin for Phicomm M1",
   "license": "GPLV3",
   "keywords": [

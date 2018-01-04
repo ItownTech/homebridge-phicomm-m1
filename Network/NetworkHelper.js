@@ -121,6 +121,7 @@ PhicommM1.prototype.parseData = function(data) {
 PhicommM1.prototype.updateAllValue = function() {
     this.TemperatureService.getCharacteristic(Characteristic.CurrentTemperature).updateValue(this.temperature);
     this.HumidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity).updateValue(this.humidity);
+    this.AirQualityService.getCharacteristic(Characteristic.AirQuality).updateValue(this.calcAirQuality(this.pm25value));
     this.AirQualityService.getCharacteristic(Characteristic.PM2_5Density).updateValue(this.pm25value);
     this.platform.log.debug('[' + this.name + ']Value Updated!');
 }

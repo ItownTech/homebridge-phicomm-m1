@@ -1,6 +1,7 @@
 require('./Base');
 const inherits = require('util').inherits;
 var PlatformAccessory, Accessory, Service, Characteristic, UUIDGen;
+var net =require('net'); 
 
 const pattern = "(\{.*?\})";
 const ServerPort = 9000;
@@ -19,9 +20,9 @@ NetworkHelper = function(platform) {
     this.sockets = {};
     this.m1s = {};
     this.api = platform.api;
+
     var that = this;
-    try{
-        var net =require('net');  
+    try{ 
         var server = this.server = net.createServer();
 
         server.on('connection',function(socket){  
@@ -29,7 +30,11 @@ NetworkHelper = function(platform) {
             that.sockets[socket.remoteAddress] = socket;
             //that.platform.log.debug(that.sockets);  
             socket.on('data', function(data){  
-                that.platform.log.debug("[Network]got data:" + data + " From IP: " + socket.remoteAddress);  
+                that.platform.log.debug("[Network]got data:" + data + " From IP: " + socket.remoteAddress); 
+                if(that.platform.config.forwardTo != null){
+                    that.platform.log.debug("[Network]Forwarding!")
+                    that.transferData(data);
+                } 
                 that.parseData(data,socket.remoteAddress)
             });  
             socket.on('close', function(){  
@@ -56,6 +61,28 @@ NetworkHelper = function(platform) {
     return null;
 }
 inherits(NetworkHelper, Base);
+
+NetworkHelper.prototype.transferData = function(data) {
+    var that = this;
+    var address = this.platform.config.forwardTo;
+    var addressarr = address.toString().split(":"); 
+    try{
+        var client = new net.Socket();
+        client.connect(addressarr[1], addressarr[0], function() {
+            that.platform.log.info('[Network]Connected To: ' + address);
+            client.write('data');
+            client.end();
+        });
+        client.on('close', function() {
+            that.platform.log.info('[Network]Connection closed');
+        });
+        client.on('error', function(err) {  
+            that.platform.log.info('[Network]Error in connection:', err);  
+        });  
+    }catch(ex){
+        that.platform.log.error("[Network]Error Transfering Data:" + ex);
+    }
+}
 
 NetworkHelper.prototype.parseData = function(data,ip) {
     var that = this;

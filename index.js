@@ -68,7 +68,7 @@ function PhicommM1Platform(log, config, api) {
     this.log.info("[INFO]*********************************************************************");
     this.log.info("[INFO]start success...");
     this.MNetworkHelper = new NetworkHelper(this);
-	
+
 	this.api.on('didFinishLaunching', function() {
         setTimeout(function() {
             this.log.info("[Network]start Cleaning!");

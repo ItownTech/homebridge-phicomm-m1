@@ -37,7 +37,22 @@ address=/.aircat.phicomm.com/192.168.1.5
 ]
 ```
 
+## Forward Data:
+```
+"platforms": [
+    {
+        "platform": "PhicommM1Platform",
+        "forwardTo" : "192.168.31.246:15000",
+        "defaultValue": {
+            "192.168.31.92": "PhicommM1"
+        }
+    }
+]
+```
+
 ## Version Logs 
+### 0.0.4
+1. add support for forward Data
 ### 0.0.3
 1. add support for led brightness(Beta)
 ### 0.0.2

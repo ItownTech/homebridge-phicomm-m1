@@ -105,7 +105,7 @@ NetworkHelper.prototype.transferData = function(data,address) {
         var client = new net.Socket();
         client.connect(addressarr[1], addressarr[0], function() {
             that.platform.log.info('[Network]Connected To: ' + address);
-            client.write('data');
+            client.write(data);
             client.end();
         });
         client.on('close', function() {
@@ -123,7 +123,7 @@ NetworkHelper.prototype.parseData = function(data,ip) {
     var that = this;
     var dataa = null;
     try{
-        var strdata = new Buffer(data,"utf-8").toString();
+        var strdata = new Buffer(data).toString();
         var r = strdata.match("(\{.*?\})");
         var src = r[1];
         that.platform.log.debug(ip + " -> " + src);
@@ -274,11 +274,10 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,status);
             }.bind(this))
             .on('set', function(value,callback) {
-                var brightness = value ? this.brightness : 0;
-                var command = brightness_hex.replace("%s",brightness.toString(16));
-                var buf = new Buffer(command,'hex');
+                var brightness = this.brightness = value ;
+                var buf = this.getBrightnessBuffer(value);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
-                this.platform.log.debug("Command: " + command);
+                this.platform.log.debug(buf);
                 callback(null);
             }.bind(this))
         this.LightService.getCharacteristic(Characteristic.Brightness)
@@ -287,10 +286,9 @@ PhicommM1.prototype.InitAccessory = function() {
             }.bind(this))
             .on('set', function(value,callback) {
                 var brightness = this.brightness = value ;
-                var command = brightness_hex.replace("%s",brightness.toString(16));
-                var buf = new Buffer(command,'hex');
+                var buf = this.getBrightnessBuffer(value);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
-                //this.platform.log.debug("Command: " + command);
+                this.platform.log.debug(buf);
                 callback(null);
             }.bind(this))
 
@@ -318,11 +316,10 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,status);
             }.bind(this))
             .on('set', function(value,callback) {
-                var brightness = value ? this.brightness : 0;
-                var command = brightness_hex.replace("%s",brightness.toString(16));
-                var buf = new Buffer(command,'hex');
+                var brightness = this.brightness = value ;
+                var buf = this.getBrightnessBuffer(value);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
-                this.platform.log.debug("Command: " + command);
+                this.platform.log.debug(buf);
                 callback(null);
             }.bind(this))
         this.LightService.getCharacteristic(Characteristic.Brightness)
@@ -331,10 +328,9 @@ PhicommM1.prototype.InitAccessory = function() {
             }.bind(this))
             .on('set', function(value,callback) {
                 var brightness = this.brightness = value ;
-                var command = brightness_hex.replace("%s",brightness.toString(16));
-                var buf = new Buffer(command,'hex');
+                var buf = this.getBrightnessBuffer(value);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
-                //this.platform.log.debug("Command: " + command);
+                this.platform.log.debug(buf);
                 callback(null);
             }.bind(this))
 
@@ -343,3 +339,9 @@ PhicommM1.prototype.InitAccessory = function() {
 
     this.allowupdate = true;
 }
+
+PhicommM1.prototype.getBrightnessBuffer = function(brightness) {  
+    var command = brightness_hex.replace("%s",brightness.toString(16));
+    var buffer = new Buffer(command,'hex');
+    return buffer;
+};

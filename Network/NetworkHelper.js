@@ -4,7 +4,9 @@ var PlatformAccessory, Accessory, Service, Characteristic, UUIDGen;
 var net =require('net'); 
 
 const pattern = "(\{.*?\})";
+const P443Port = 443;
 const ServerPort = 9000;
+const pServer = "aircat.phicomm.com";
 const sockets = [];
 const brightness_hex = "aa2f01e02411398f0b0000000000000000b0f89311420e003d0000027b226272696768746e657373223a22%s222c2274797065223a327dff23454e4423"
 
@@ -18,13 +20,13 @@ NetworkHelper = function(platform) {
     UUIDGen = platform.UUIDGen;
     
     this.sockets = {};
+    this.psockets = {};
     this.m1s = {};
     this.api = platform.api;
 
     var that = this;
     try{ 
         var server = this.server = net.createServer();
-
         server.on('connection',function(socket){  
             that.platform.log.info("[Network]New connection!");  
             that.sockets[socket.remoteAddress] = socket;
@@ -32,8 +34,9 @@ NetworkHelper = function(platform) {
             socket.on('data', function(data){  
                 that.platform.log.debug("[Network]got data:" + data + " From IP: " + socket.remoteAddress); 
                 if(that.platform.config.forwardTo != null){
+                    var address = that.platform.config.forwardTo;
                     that.platform.log.debug("[Network]Forwarding!")
-                    that.transferData(data);
+                    that.transferData(data,address);
                 } 
                 that.parseData(data,socket.remoteAddress)
             });  
@@ -42,7 +45,7 @@ NetworkHelper = function(platform) {
                 for (var i in that.sockets) {
                     socke = that.sockets[i];
                     if(socke.remoteAddress == socket.remoteAddress){
-                        that.platform.log.debug("Deleting Unconnected " + socket.remoteAddress);
+                        that.platform.log.debug("[Network]Deleting Unconnected " + socket.remoteAddress);
                         delete that.sockets[i];
                     }
                 }
@@ -54,6 +57,39 @@ NetworkHelper = function(platform) {
         });
         server.listen(ServerPort);
         that.platform.log.info("[Network]TCP Server Starting on " + ServerPort);
+
+        if(that.platform.config.forwardTo != null){
+            var P443server = this.P443server = net.createServer();
+            P443server.on('connection',function(socket){  
+                that.platform.log.info("[Network]P443server New connection!");  
+                that.psockets[socket.remoteAddress] = socket;
+                //that.platform.log.debug(that.psockets);  
+                socket.on('data', function(data){  
+                    that.platform.log.debug("[Network]P443server got data:" + data + " From IP: " + socket.remoteAddress); 
+                    that.platform.log.debug("[Network]P443server Forwarding!")
+                    var address = pServer + ":" + P443Port;
+                    that.transferData(data,address);
+                });  
+                socket.on('close', function(){  
+                    that.platform.log.debug("[Network]P443server Connection closed!");
+                    for (var i in that.psockets) {
+                        socke = that.psockets[i];
+                        if(socke.remoteAddress == socket.remoteAddress){
+                            that.platform.log.debug("[Network]P443server Deleting Unconnected " + socket.remoteAddress);
+                            delete that.psockets[i];
+                        }
+                    }
+                    //that.platform.log.debug(that.sockets);  
+                });  
+            });  
+            P443server.on('error', function(err){
+               that.platform.log.info("[Network]P443server Error occurred:", err.message);
+            });
+            P443server.listen(P443Port);
+            that.platform.log.info("[Network]P443 Server Starting on " + ServerPort);
+        }
+
+        
     }catch(ex){
         that.platform.log.error("[Network]Error Loading Server:" + ex);
         throw ex;
@@ -62,9 +98,8 @@ NetworkHelper = function(platform) {
 }
 inherits(NetworkHelper, Base);
 
-NetworkHelper.prototype.transferData = function(data) {
+NetworkHelper.prototype.transferData = function(data,address) {
     var that = this;
-    var address = this.platform.config.forwardTo;
     var addressarr = address.toString().split(":"); 
     try{
         var client = new net.Socket();
@@ -308,6 +343,3 @@ PhicommM1.prototype.InitAccessory = function() {
 
     this.allowupdate = true;
 }
-
-
-

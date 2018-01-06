@@ -55,6 +55,7 @@ You can read the Wiki https://homekit.loli.ren/docs/show/81 to use MITM to get t
 ## Version Logs 
 ### 0.0.5 
 1. add support for 443 forwarding
+2. rewrite led support
 ### 0.0.4
 1. add support for forward Data
 ### 0.0.3

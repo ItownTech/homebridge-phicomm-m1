@@ -274,8 +274,12 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,status);
             }.bind(this))
             .on('set', function(value,callback) {
-                var brightness = this.brightness = value ;
-                var buf = this.getBrightnessBuffer(value);
+                if(value){
+                    var brightness = this.brightness = 100;
+                }else{
+                    var brightness = this.brightness = 0;
+                }
+                var buf = this.getBrightnessBuffer(brightness);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
                 this.platform.log.debug(buf);
                 callback(null);
@@ -316,8 +320,12 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,status);
             }.bind(this))
             .on('set', function(value,callback) {
-                var brightness = this.brightness = value ;
-                var buf = this.getBrightnessBuffer(value);
+                if(value){
+                    var brightness = this.brightness = 100;
+                }else{
+                    var brightness = this.brightness = 0;
+                }
+                var buf = this.getBrightnessBuffer(brightness);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
                 this.platform.log.debug(buf);
                 callback(null);
@@ -340,8 +348,18 @@ PhicommM1.prototype.InitAccessory = function() {
     this.allowupdate = true;
 }
 
-PhicommM1.prototype.getBrightnessBuffer = function(brightness) {  
-    var command = brightness_hex.replace("%s",brightness.toString(16));
+PhicommM1.prototype.getBrightnessBuffer = function(brightness) {
+    var str = brightness.toString();
+    this.platform.log.debug("[Network]Brightness: " + brightness + "," + this.brightness);
+    var hexbrightness = "";
+    for (var i = 0, len = str.length; i < len; i++) {
+        hexbrightness = hexbrightness + Buffer(str[i],'ascii').toString('hex');
+    }
+    this.platform.log.debug("[Network]Brightness in HEX: " + hexbrightness);
+    var command = brightness_hex.replace("%s",hexbrightness);
     var buffer = new Buffer(command,'hex');
     return buffer;
 };
+
+
+

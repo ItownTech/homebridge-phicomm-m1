@@ -11,8 +11,6 @@ Telegram Group: https://t.me/joinchat/EujYfA-JKSwpRlXURD1t6g
 This plugin is based on Zackr's Domoticz Plugin  
 https://www.domoticz.cn/forum/viewtopic.php?f=11&t=165  
 
-## The support for LED Brightness has not been tested because I don't have one M1. If it works, please open an issue to let me know!!!
-
 ## Supported Types
 1. Phicomm M1
 
@@ -53,6 +51,8 @@ You can read the Wiki https://homekit.loli.ren/docs/show/81 to use MITM to get t
 ```
 
 ## Version Logs 
+### 0.0.7
+1. Fix Readme
 ### 0.0.6
 1. Fix the brightness level to 0 25 100
 2. Change 443 forwarding

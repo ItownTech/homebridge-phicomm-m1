@@ -53,6 +53,9 @@ You can read the Wiki https://homekit.loli.ren/docs/show/81 to use MITM to get t
 ```
 
 ## Version Logs 
+### 0.0.6
+1. Fix the brightness level to 0 25 100
+2. Change 443 forwarding
 ### 0.0.5 
 1. add support for 443 forwarding
 2. rewrite led support

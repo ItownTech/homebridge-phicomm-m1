@@ -67,7 +67,9 @@ NetworkHelper = function(platform) {
                 socket.on('data', function(data){  
                     that.platform.log.debug("[Network]P443server got data:" + data + " From IP: " + socket.remoteAddress); 
                     that.platform.log.debug("[Network]P443server Forwarding!")
-                    var address = pServer + ":" + P443Port;
+                    var addresss = that.platform.config.forwardTo;
+                    var addressarr = addresss.toString().split(":"); 
+                    var address = addressarr[0] + ":" + P443Port;
                     that.transferData(data,address);
                 });  
                 socket.on('close', function(){  
@@ -289,8 +291,8 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,this.brightness);
             }.bind(this))
             .on('set', function(value,callback) {
-                var brightness = this.brightness = value ;
-                var buf = this.getBrightnessBuffer(value);
+                var brightness = this.brightness = this.getSuitBrightness(value);
+                var buf = this.getBrightnessBuffer(brightness);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
                 this.platform.log.debug(buf);
                 callback(null);
@@ -335,8 +337,8 @@ PhicommM1.prototype.InitAccessory = function() {
                 callback(null,this.brightness);
             }.bind(this))
             .on('set', function(value,callback) {
-                var brightness = this.brightness = value ;
-                var buf = this.getBrightnessBuffer(value);
+                var brightness = this.brightness = this.getSuitBrightness(value);
+                var buf = this.getBrightnessBuffer(brightness);
                 this.platform.MNetworkHelper.sendData(this.ip,buf);
                 this.platform.log.debug(buf);
                 callback(null);
@@ -347,6 +349,22 @@ PhicommM1.prototype.InitAccessory = function() {
 
     this.allowupdate = true;
 }
+
+PhicommM1.prototype.getSuitBrightness = function(brightness) {
+    if(0<= brightness <= 25){
+        if(25 - brightness < brightness){
+            return 25
+        }else{
+            return 0
+        }
+    }else if(25 < brightness <= 100){
+       if(100 - brightness < brightness - 25){
+            return 100
+        }else{
+            return 25
+        } 
+    }
+};
 
 PhicommM1.prototype.getBrightnessBuffer = function(brightness) {
     var str = brightness.toString();
